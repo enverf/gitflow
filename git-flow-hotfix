@@ -89,7 +89,7 @@ cmd_list() {
 	for branch in $short_names; do
 		local fullname=$PREFIX$branch
 		local base=$(git merge-base "$fullname" "$MASTER_BRANCH")
-		local master_sha=$(git rev-parse "$MASTER_BRANCH")
+		local release_sha=$(git rev-parse "$MASTER_BRANCH")
 		local branch_sha=$(git rev-parse "$fullname")
 		if [ "$fullname" = "$current_branch" ]; then
 			printf "* "
@@ -98,7 +98,7 @@ cmd_list() {
 		fi
 		if flag verbose; then
 			printf "%-${width}s" "$branch"
-			if [ "$branch_sha" = "$master_sha" ]; then
+			if [ "$branch_sha" = "$release_sha" ]; then
 				printf "(no commits yet)"
 			else
 				local tagname=$(git name-rev --tags --no-undefined --name-only "$base")
@@ -140,7 +140,7 @@ require_version_arg() {
 	fi
 }
 
-require_base_is_on_master() {
+require_base_is_on_release() {
 	if ! git branch --no-color --contains "$BASE" 2>/dev/null \
 			| sed 's/[* ] //g' \
 	  		| grep -q "^$MASTER_BRANCH\$"; then
@@ -161,7 +161,7 @@ cmd_start() {
 	parse_args "$@"
 	BASE=${2:-$MASTER_BRANCH}
 	require_version_arg
-	require_base_is_on_master
+	require_base_is_on_release
 	require_no_existing_hotfix_branches
 
 	# sanity checks
@@ -241,13 +241,13 @@ cmd_track() {
 
 cmd_finish() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
-	DEFINE_boolean sign false "sign the release tag cryptographically" s
+	DEFINE_boolean sign false "sign the master tag cryptographically" s
 	DEFINE_string signingkey "" "use the given GPG-key for the digital signature (implies -s)" u
 	DEFINE_string message "" "use the given tag message" m
 	DEFINE_string messagefile "" "use the contents of the given file as tag message" f
 	DEFINE_boolean push false "push to $ORIGIN after performing finish" p
 	DEFINE_boolean keep false "keep branch after performing finish" k
-	DEFINE_boolean notag false "don't tag this release" n
+	DEFINE_boolean notag false "don't tag this master" n
 	parse_args "$@"
 	require_version_arg
 
@@ -272,9 +272,9 @@ cmd_finish() {
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
-	# try to merge into master
-	# in case a previous attempt to finish this release branch has failed,
-	# but the merge into master was successful, we skip it now
+	# try to merge into release
+	# in case a previous attempt to finish this master branch has failed,
+	# but the merge into release was successful, we skip it now
 	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
 		git_do checkout "$MASTER_BRANCH" || \
 		  die "Could not check out $MASTER_BRANCH."
@@ -284,8 +284,8 @@ cmd_finish() {
 	fi
 
 	if noflag notag; then
-		# try to tag the release
-		# in case a previous attempt to finish this release branch has failed,
+		# try to tag the master
+		# in case a previous attempt to finish this master branch has failed,
 		# but the tag was set successful, we skip it now
 		local tagname=$VERSION_PREFIX$VERSION
 		if ! git_tag_exists "$tagname"; then
@@ -300,7 +300,7 @@ cmd_finish() {
 	fi
 
 	# try to merge into develop
-	# in case a previous attempt to finish this release branch has failed,
+	# in case a previous attempt to finish this master branch has failed,
 	# but the merge into develop was successful, we skip it now
 	if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
 		git_do checkout "$DEVELOP_BRANCH" || \

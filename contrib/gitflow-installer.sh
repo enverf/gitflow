@@ -2,7 +2,7 @@
 
 # git-flow make-less installer for *nix systems, by Rick Osborne
 # Based on the git-flow core Makefile:
-# http://github.com/nvie/gitflow/blob/master/Makefile
+# http://github.com/nvie/gitflow/blob/release/Makefile
 
 # Licensed under the same restrictions as git-flow:
 # http://github.com/nvie/gitflow/blob/develop/LICENSE
@@ -21,7 +21,7 @@ if [ -z "$REPO_HOME" ] ; then
 fi
 
 EXEC_FILES="git-flow"
-SCRIPT_FILES="git-flow-init git-flow-feature git-flow-hotfix git-flow-release git-flow-support git-flow-version gitflow-common gitflow-shFlags"
+SCRIPT_FILES="git-flow-init git-flow-feature git-flow-hotfix git-flow-master git-flow-support git-flow-version gitflow-common gitflow-shFlags"
 SUBMODULE_FILE="gitflow-shFlags"
 
 echo "### gitflow no-make installer ###"

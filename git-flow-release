@@ -41,15 +41,15 @@ init() {
   require_gitflow_initialized
   gitflow_load_settings
   VERSION_PREFIX=$(eval "echo `git config --get gitflow.prefix.versiontag`")
-  PREFIX=$(git config --get gitflow.prefix.release)
+  PREFIX=$(git config --get gitflow.prefix.master)
 }
 
 usage() {
-	echo "usage: git flow release [list] [-v]"
-	echo "       git flow release start [-F] <version> [<base>]"
-	echo "       git flow release finish [-FsumpkS] <version>"
-	echo "       git flow release publish <name>"
-	echo "       git flow release track <name>"
+	echo "usage: git flow master [list] [-v]"
+	echo "       git flow master start [-F] <version> [<base>]"
+	echo "       git flow master finish [-FsumpkS] <version>"
+	echo "       git flow master publish <name>"
+	echo "       git flow master track <name>"
 }
 
 cmd_default() {
@@ -60,22 +60,22 @@ cmd_list() {
 	DEFINE_boolean verbose false 'verbose (more) output' v
 	parse_args "$@"
 
-	local release_branches
+	local master_branches
 	local current_branch
 	local short_names
-	release_branches=$(echo "$(git_local_branches)" | grep "^$PREFIX")
-	if [ -z "$release_branches" ]; then
-		warn "No release branches exist."
+	master_branches=$(echo "$(git_local_branches)" | grep "^$PREFIX")
+	if [ -z "$master_branches" ]; then
+		warn "No master branches exist."
                 warn ""
-                warn "You can start a new release branch:"
+                warn "You can start a new master branch:"
                 warn ""
-                warn "    git flow release start <name> [<base>]"
+                warn "    git flow master start <name> [<base>]"
                 warn ""
 		exit 0
 	fi
 
 	current_branch=$(git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g')
-	short_names=$(echo "$release_branches" | sed "s ^$PREFIX  g")
+	short_names=$(echo "$master_branches" | sed "s ^$PREFIX  g")
 
 	# determine column width first
 	local width=0
@@ -143,12 +143,12 @@ require_base_is_on_develop() {
 	fi
 }
 
-require_no_existing_release_branches() {
-	local release_branches=$(echo "$(git_local_branches)" | grep "^$PREFIX")
-	local first_branch=$(echo ${release_branches} | head -n1)
+require_no_existing_master_branches() {
+	local master_branches=$(echo "$(git_local_branches)" | grep "^$PREFIX")
+	local first_branch=$(echo ${master_branches} | head -n1)
 	first_branch=${first_branch#$PREFIX}
-	[ -z "$release_branches" ] || \
-		die "There is an existing release branch ($first_branch). Finish that one first."
+	[ -z "$master_branches" ] || \
+		die "There is an existing master branch ($first_branch). Finish that one first."
 }
 
 cmd_start() {
@@ -157,7 +157,7 @@ cmd_start() {
 	BASE=${2:-$DEVELOP_BRANCH}
 	require_version_arg
 	require_base_is_on_develop
-	require_no_existing_release_branches
+	require_no_existing_master_branches
 
 	# sanity checks
 	require_clean_working_tree
@@ -180,23 +180,23 @@ cmd_start() {
 	echo
 	echo "Follow-up actions:"
 	echo "- Bump the version number now!"
-	echo "- Start committing last-minute fixes in preparing your release"
+	echo "- Start committing last-minute fixes in preparing your master"
 	echo "- When done, run:"
 	echo
-	echo "     git flow release finish '$VERSION'"
+	echo "     git flow master finish '$VERSION'"
 	echo
 }
 
 cmd_finish() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
-	DEFINE_boolean sign false "sign the release tag cryptographically" s
+	DEFINE_boolean sign false "sign the master tag cryptographically" s
 	DEFINE_string signingkey "" "use the given GPG-key for the digital signature (implies -s)" u
 	DEFINE_string message "" "use the given tag message" m
 	DEFINE_string messagefile "" "use the contents of the given file as a tag message" f
 	DEFINE_boolean push false "push to $ORIGIN after performing finish" p
 	DEFINE_boolean keep false "keep branch after performing finish" k
-	DEFINE_boolean notag false "don't tag this release" n
-	DEFINE_boolean squash false "squash release during merge" S
+	DEFINE_boolean notag false "don't tag this master" n
+	DEFINE_boolean squash false "squash master during merge" S
 
 	parse_args "$@"
 	require_version_arg
@@ -222,9 +222,9 @@ cmd_finish() {
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
-	# try to merge into master
-	# in case a previous attempt to finish this release branch has failed,
-	# but the merge into master was successful, we skip it now
+	# try to merge into release
+	# in case a previous attempt to finish this master branch has failed,
+	# but the merge into release was successful, we skip it now
 	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
 		git_do checkout "$MASTER_BRANCH" || \
 		  die "Could not check out $MASTER_BRANCH."
@@ -240,8 +240,8 @@ cmd_finish() {
 	fi
 
 	if noflag notag; then
-		# try to tag the release
-		# in case a previous attempt to finish this release branch has failed,
+		# try to tag the master
+		# in case a previous attempt to finish this master branch has failed,
 		# but the tag was set successful, we skip it now
 		local tagname=$VERSION_PREFIX$VERSION
 		if ! git_tag_exists "$tagname"; then
@@ -256,7 +256,7 @@ cmd_finish() {
 	fi
 
 	# try to merge into develop
-	# in case a previous attempt to finish this release branch has failed,
+	# in case a previous attempt to finish this master branch has failed,
 	# but the merge into develop was successful, we skip it now
 	if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
 		git_do checkout "$DEVELOP_BRANCH" || \
@@ -300,19 +300,19 @@ cmd_finish() {
 	echo
 	echo "Summary of actions:"
 	echo "- Latest objects have been fetched from '$ORIGIN'"
-	echo "- Release branch has been merged into '$MASTER_BRANCH'"
+	echo "- Master branch has been merged into '$MASTER_BRANCH'"
 	if noflag notag; then
-		echo "- The release was tagged '$tagname'"
+		echo "- The master was tagged '$tagname'"
 	fi
-	echo "- Release branch has been back-merged into '$DEVELOP_BRANCH'"
+	echo "- Master branch has been back-merged into '$DEVELOP_BRANCH'"
 	if flag keep; then
-		echo "- Release branch '$BRANCH' is still available"
+		echo "- Master branch '$BRANCH' is still available"
 	else
-		echo "- Release branch '$BRANCH' has been deleted"
+		echo "- Master branch '$BRANCH' has been deleted"
 	fi
 	if flag push; then
 		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
-		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+		echo "- Master branch '$BRANCH' in '$ORIGIN' has been deleted."
 	fi
 	echo
 }
